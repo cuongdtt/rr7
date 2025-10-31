@@ -9,14 +9,20 @@ This is a Material-UI + React Router example project demonstrating how to integr
 ## Common Development Commands
 
 ### Development
-- `npm run dev` - Start development server with hot reload
+- `npm run dev` - Start development server with PM2 auto-restart
 - `npm run build` - Build the application for production
-- `npm run start` - Start the production server
+- `npm run start` - Start production server with React Router optimization
+- `npm run start:custom` - Start custom Express server with middleware
+- `npm run start:production` - Start production-optimized React Router server
 - `npm run typecheck` - Run TypeScript type checking and generate React Router types
 
 ### Package Management
 - `npm install` - Install dependencies
 - `npm run typecheck` - Generates React Router types via `react-router typegen`
+
+### PM2 Management
+- `npm run dev:stop` - Stop PM2 development server
+- `npm run dev:logs` - View PM2 development server logs
 
 ## Architecture Overview
 

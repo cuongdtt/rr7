@@ -8,7 +8,8 @@
     "dev:stop": "pm2 delete material-ui-react-router-dev",
     "dev:logs": "pm2 logs material-ui-react-router-dev",
     "start": "react-router-serve ./build/server/index.js",
-    "start:custom": "cross-env NODE_ENV=production node server.js",
+    "start:custom": "cross-env NODE_ENV=production node server.ts",
+    "start:production": "cross-env NODE_ENV=production REACT_ROUTER_MODE=production node server.ts",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
