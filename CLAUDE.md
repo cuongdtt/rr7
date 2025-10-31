@@ -4,44 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Material-UI + React Router example project demonstrating how to integrate Material-UI with React Router v6 using TypeScript and server-side rendering (SSR).
+This is a Material-UI + React Router v7 example project demonstrating how to integrate Material-UI with React Router v7 using TypeScript and server-side rendering (SSR).
 
 ## Common Development Commands
 
-### Development
-- `npm run dev` - Start development server with PM2 auto-restart
-- `npm run build` - Build the application for production
-- `npm run start` - Start production server with React Router optimization
-- `npm run start:custom` - Start custom Express server with middleware
-- `npm run start:production` - Start production-optimized React Router server
-- `npm run typecheck` - Run TypeScript type checking and generate React Router types
+### Server Management
+- `npm run dev` - Start development server with PM2 auto-restart and Vite HMR
+- `npm run start` - Start production server with optimized static asset serving
+- `npm run stop` - Stop PM2 server
+- `npm run restart` - Restart PM2 server
+- `npm run logs` - View PM2 server logs (last 100 lines)
+- `npm run delete` - Delete PM2 process
 
-### Package Management
-- `npm install` - Install dependencies
-- `npm run typecheck` - Generates React Router types via `react-router typegen`
-
-### PM2 Management
-- `npm run dev:stop` - Stop PM2 development server
-- `npm run dev:logs` - View PM2 development server logs
+### Build and Type Checking
+- `npm run build` - Build the application for production (React Router v7 build process)
+- `npm run typecheck` - Run TypeScript type checking and generate React Router types via `react-router typegen`
 
 ## Architecture Overview
 
-### Routing Architecture
-- **File-Based Routing**: Routes are defined in `react-router.config.ts` and implemented in `/app/routes/`
-- **Root Layout**: `app/root.tsx` provides the main layout structure and error boundaries
-- **Route Components**: Each route in `/app/routes/` exports a component and optional `meta()` function for SEO
+### Hybrid Express + React Router v7 Server Architecture
+- **Main Server** (`server.ts`): Express server that conditionally loads development or production modes
+- **Development Mode**: Uses Vite dev server with middleware mode for HMR and SSR loading `./server/app.ts` via `viteDevServer.ssrLoadModule()`
+- **Production Mode**: Serves static assets with cache headers and uses `@react-router/express` with compiled server bundle from `./build/server/index.js`
+- **React Router Handler** (`server/app.ts`): Express app with context injection using `@react-router/express`
 
-### Material-UI Integration
-- **Theme Configuration**: `app/theme.tsx` contains the Material-UI theme with CSS variables for light/dark mode
-- **Emotion Cache**: `app/createCache.ts` configures Emotion cache for SSR optimization
-- **Component Structure**: Uses Container, Typography, and Box patterns for consistent layouts
+**Development Mode Pattern:**
+```typescript
+const viteDevServer = await import("vite").then(vite =>
+  vite.createServer({ server: { middlewareMode: true } })
+);
+app.use(viteDevServer.middlewares);
+app.use(async (req, res, next) => {
+  const source = await viteDevServer.ssrLoadModule('./server/app.ts');
+  const handler = source.app;
+  return handler(req, res, next);
+});
+```
 
-### SSR Architecture
-- **Entry Points**:
-  - `app/entry.client.tsx` - Client-side hydration
-  - `app/entry.server.tsx` - Server-side rendering with critical CSS extraction
-- **CSS Extraction**: Emotion server integration extracts critical styles during SSR
-- **Bot Detection**: Special handling for crawlers to ensure complete content loading
+**Production Mode Pattern:**
+```typescript
+app.use('/build', express.static('build/client', { immutable: true, maxAge: '1y' }));
+app.use(createRequestHandler({
+  build: await import('./build/server/index.js'),
+  mode: 'production',
+}));
+```
+
+### React Router v7 App Structure
+- **File-Based Routing**: Routes automatically detected from `/app/routes/` directory
+- **Route Components**: Export default component and optional `meta()` function for SEO
+- **Context Injection**: Server can inject context via `getLoadContext()` in `server/app.ts`
+
+### Material-UI + Emotion SSR Integration
+- **Theme Configuration** (`app/theme.tsx`): Material-UI v7 theme with CSS variables for light/dark mode
+- **Emotion Cache** (`app/createCache.ts`): Custom cache with `@layer mui` for style encapsulation and SSR optimization
+- **Streaming SSR**: Uses `renderToPipeableStream` with bot detection and critical CSS extraction
+- **Layer Management**: Emotion server integration wraps styles in CSS layers to prevent conflicts
 
 ### Path Aliases
 - `~/*` maps to `./app/*` - Use this for clean imports within the app directory
@@ -49,15 +67,18 @@ This is a Material-UI + React Router example project demonstrating how to integr
 ## Key Files Structure
 
 ```
+server/
+├── server.ts          # Main Express server with dev/prod mode switching
+└── app.ts            # React Router v7 handler with context injection
+
 app/
-├── root.tsx           # Root layout with theme provider and error boundaries
-├── routes.ts         # Route definitions exported for React Router
-├── routes/           # Individual route components
+├── root.tsx          # Root layout with theme provider and streaming SSR
+├── routes/           # File-based routing components
 ├── components/       # Shared reusable components
-├── theme.tsx         # Material-UI theme configuration
-├── createCache.ts    # Emotion cache setup for SSR
-├── entry.client.tsx  # Client-side entry point
-└── entry.server.tsx  # Server-side entry point with SSR logic
+├── theme.tsx         # Material-UI theme with CSS variables
+├── createCache.ts    # Emotion cache with layer management
+├── entry.client.tsx  # Client-side hydration with HydratedRouter
+└── entry.server.tsx  # Advanced SSR with streaming and CSS extraction
 ```
 
 ## Development Notes
@@ -65,14 +86,35 @@ app/
 ### Adding New Routes
 1. Create route component in `/app/routes/[name].tsx`
 2. Export default component and optional `meta()` function
-3. React Router automatically detects and includes the route
+3. React Router v7 automatically detects and includes the route
 
-### Styling Guidelines
-- Use Material-UI's `sx` prop for one-off custom styles
-- Extend the theme in `app/theme.tsx` for global design changes
-- Leverage Emotion's `css` prop for complex component-specific styles
+### Server Context Pattern
+The server uses `getLoadContext()` to inject values that can be accessed in route loaders/actions:
+```typescript
+// server/app.ts
+getLoadContext() {
+  return { VALUE_FROM_EXPRESS: 'Hello from Express' };
+}
 
-### SSR Considerations
-- All components must work on both server and client
-- Use `isbot` detection for crawler-specific optimizations
-- Critical CSS is automatically extracted and injected during SSR
+// In route loader
+export async function loader({ context }: LoaderFunctionArgs) {
+  console.log(context.VALUE_FROM_EXPRESS); // 'Hello from Express'
+}
+```
+
+### SSR Streaming Architecture
+- Uses React 18's `renderToPipeableStream` for progressive rendering
+- Custom transform stream handles HTML and CSS injection
+- Bot detection with `isbot` for complete content loading vs streaming
+- 5-second stream timeout with comprehensive error boundaries
+
+### Emotion + Material-UI Integration
+- **Critical CSS Extraction**: Server-side emotion integration extracts and injects critical styles
+- **Layer-Based Organization**: Custom emotion cache wraps all styles in `@layer mui`
+- **Client-Side Hydration**: Maintains style continuity between server and client
+- **Development Workarounds**: Vite SSR config has specific optimizations for Material-UI
+
+### TypeScript Configuration
+- React Router v7 type generation via `react-router typegen`
+- Path alias resolution for `~/*` imports
+- Full type safety for server context and route loaders/actions

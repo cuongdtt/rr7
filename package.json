@@ -5,7 +5,11 @@
   "scripts": {
     "build": "react-router build",
     "dev": "cross-env NODE_ENV=development node server.ts",
-    "start": "cross-env NODE_ENV=production node server.ts",
+    "start": "cross-env NODE_ENV=production pm2 --name material-ui-react-router-dev start server.ts",
+    "stop": "pm2 stop material-ui-react-router-dev",
+    "restart": "pm2 restart material-ui-react-router-dev",
+    "logs": "pm2 logs material-ui-react-router-dev --lines 100",
+    "delete": "pm2 delete material-ui-react-router-dev",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
