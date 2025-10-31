@@ -2,10 +2,11 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import { Link as ReactRouterLink } from 'react-router';
+import { Await, Link as ReactRouterLink } from 'react-router';
 import ProTip from '~/components/ProTip';
 import Copyright from '~/components/Copyright';
 import { styled } from '@mui/material/styles';
+import * as React from 'react';
 
 export function meta() {
   return [
@@ -29,30 +30,36 @@ const TitleCustom = styled(Typography)({
   textDecoration: 'underline',
 });
 
-export default function About() {
+export async function loader() {
+  // Only critical data here
+  const criticalData = await new Promise(res =>
+    setTimeout(() => res("critical"), 100)
+  );
+  const nonCriticalData = new Promise(res =>
+    setTimeout(() => res("nonCriticalData"), 4000)
+  );
+  return { criticalData, nonCriticalData };
+}
+
+export default function About({ loaderData }) {
+  // Non-critical data fetched in component with Suspense
+  const { criticalData, nonCriticalData } = loaderData;
+
   return (
-    <Container maxWidth="lg">
-      <Box
-        sx={{
-          my: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <TitleCustom variant="h4">Halo</TitleCustom>
-        <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-          Material UI - React Router example in TypeScript
-        </Typography>
-        <Box sx={{ maxWidth: 'sm' }}>
-          <Button variant="contained" component={ReactRouterLink} to="/">
-            Go to the home page
-          </Button>
-        </Box>
-        <ProTip />
-        <Copyright />
-      </Box>
-    </Container>
+    <div>
+      <TitleCustom>{criticalData}</TitleCustom>
+      <React.Suspense fallback={<div>Loading...</div>}>
+        <Await resolve={nonCriticalData}>
+          {value => <h1>{value}</h1>}
+        </Await>
+      </React.Suspense>
+      <Button onClick={() => {
+        console.log('clicked');
+      }}>
+        Click me
+      </Button>
+      <ProTip />
+      <Copyright />
+    </div>
   );
 }
