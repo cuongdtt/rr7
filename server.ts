@@ -1,11 +1,10 @@
 import { createRequestHandler } from '@react-router/express';
 import compression from 'compression';
-import express, { type NextFunction, type RequestHandler } from 'express';
+import express from 'express';
 import morgan from 'morgan';
 
 // Short-circuit the type-checking of the built output.
 const BUILD_PATH = './build/server/index.js';
-const DEV_PATH = 'build/client';
 const DEVELOPMENT = process.env.NODE_ENV !== 'production';
 const PORT = Number.parseInt(process.env.PORT || '3000', 10);
 
