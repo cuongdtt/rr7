@@ -4,8 +4,11 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "react-router dev",
+    "dev": "cross-env NODE_ENV=development pm2 start npx --name material-ui-react-router-dev -- react-router dev",
+    "dev:stop": "pm2 delete material-ui-react-router-dev",
+    "dev:logs": "pm2 logs material-ui-react-router-dev",
     "start": "react-router-serve ./build/server/index.js",
+    "start:custom": "cross-env NODE_ENV=production node server.js",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -14,9 +17,18 @@
     "@emotion/server": "latest",
     "@emotion/styled": "latest",
     "@mui/material": "latest",
+    "@react-router/express": "^7.9.5",
     "@react-router/node": "latest",
     "@react-router/serve": "latest",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.5",
+    "@types/morgan": "^1.9.10",
+    "compression": "^1.8.1",
+    "cross-env": "^10.1.0",
+    "express": "^5.1.0",
     "isbot": "latest",
+    "morgan": "^1.10.1",
+    "pm2": "^6.0.13",
     "react": "latest",
     "react-dom": "latest",
     "react-router": "latest"
@@ -26,6 +38,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "ts-node": "^10.9.2",
     "typescript": "latest",
     "vite": "latest",
     "vite-tsconfig-paths": "latest"
